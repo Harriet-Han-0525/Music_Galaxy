@@ -1,0 +1,30 @@
+﻿sampling_relation_id,sampling_track_id,sampled_track_id,relation_type,verification_level,note
+SMP001,TRK003,TRK002,interpolation,secondary_reference,Jamie Foxx replays the Ray Charles hook; standard teaching example.
+SMP002,TRK002,TRK001,melodic_reference,secondary_reference,Gospel source lineage commonly cited in sample-chain discussions.
+SMP003,TRK011,TRK010,direct_sample,secondary_reference,Core soul sample reused by Kanye West.
+SMP004,TRK013,TRK012,direct_sample,secondary_reference,Classic bassline sample relation.
+SMP005,TRK015,TRK014,direct_sample,secondary_reference,Canonical pop-rap sample pair.
+SMP006,TRK017,TRK016,direct_sample,secondary_reference,Widely documented R&B sample source.
+SMP007,TRK019,TRK018,direct_sample,secondary_reference,Well-known soul sample lineage.
+SMP008,TRK021,TRK020,direct_sample,secondary_reference,Iconic sped-up soul vocal sample.
+SMP009,TRK047,TRK022,direct_sample,secondary_reference,Otis Redding vocal sample reused as title concept.
+SMP010,TRK025,TRK024,direct_sample,secondary_reference,Nina Simone vocal sample relation.
+SMP011,TRK009,TRK008,direct_sample,secondary_reference,Part of the long recursive sample chain example.
+SMP012,TRK008,TRK007,direct_sample,secondary_reference,Part of the long recursive sample chain example.
+SMP013,TRK007,TRK006,direct_sample,secondary_reference,Part of the long recursive sample chain example.
+SMP014,TRK006,TRK005,direct_sample,secondary_reference,Part of the long recursive sample chain example.
+SMP015,TRK005,TRK004,direct_sample,secondary_reference,Part of the long recursive sample chain example.
+SMP016,TRK003,TRK064,lyric_reference,manual_curation,Added as a same-artist production-lineage edge for denser graph traversal.
+SMP017,TRK021,TRK064,melodic_reference,manual_curation,Added to connect early Kanye sample-based tracks into one local chain.
+SMP018,TRK047,TRK045,lyric_reference,manual_curation,Album-era lineage edge used to strengthen recursive demo coverage.
+SMP019,TRK045,TRK054,melodic_reference,manual_curation,Jay-Z/Kanye network lineage edge for recursion demos.
+SMP020,TRK053,TRK098,lyric_reference,manual_curation,Intra-era lineage edge for denser traversal.
+SMP021,TRK056,TRK053,melodic_reference,manual_curation,Intra-era lineage edge for denser traversal.
+SMP022,TRK054,TRK055,lyric_reference,manual_curation,Cross-project lineage edge connecting Jay-Z/Kanye cluster.
+SMP023,TRK055,TRK003,lyric_reference,manual_curation,Cross-track lineage edge within the same album period.
+SMP024,TRK066,TRK013,lyric_reference,manual_curation,East Coast lineage edge connecting posse-cut era to earlier canonical rap sample use.
+SMP025,TRK073,TRK019,melodic_reference,manual_curation,Boom-bap lineage edge for denser graph coverage.
+SMP026,TRK074,TRK017,lyric_reference,manual_curation,Rap lineage edge linking 1990s source material to later storytelling rap.
+SMP027,TRK107,TRK073,melodic_reference,manual_curation,Artist-lineage edge for recursive demos.
+SMP028,TRK109,TRK107,lyric_reference,manual_curation,Artist-lineage edge for recursive demos.
+SMP029,TRK071,TRK066,melodic_reference,manual_curation,Artist-lineage edge for recursive demos.

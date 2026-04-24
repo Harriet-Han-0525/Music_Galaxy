@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero compact">
+    <p class="eyebrow">SQL Demo</p>
+    <h2>Live query evidence from PostgreSQL.</h2>
+    <p class="lead">
+        This page combines the highest-value parts of the course demo:
+        advanced SQL evidence, meaningful write operations, and the core design-and-management choices
+        that make the database reproducible and explainable.
+    </p>
+</section>
+
+<section class="split-grid">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Design and Management Highlights</h3>
+            <p>These are the strongest database-management ideas to mention in the report and oral demo.</p>
+        </div>
+        <div id="management-highlights" class="list-stack loading">Loading...</div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Why These Demos Matter</h3>
+            <p>The query set is intentionally small but high value, matching the assignment brief without drifting into side topics.</p>
+        </div>
+        <div class="list-stack">
+            <div class="list-item"><span>Recursive lineage</span><strong>sampling ancestors + descendants</strong></div>
+            <div class="list-item"><span>Graph joins</span><strong>direct, second-hop, and pair collaboration</strong></div>
+            <div class="list-item"><span>Temporal aggregation</span><strong>covers over decades</strong></div>
+            <div class="list-item"><span>Feature analysis</span><strong>extreme groups + pair similarity</strong></div>
+            <div class="list-item"><span>Safe writes</span><strong>new sample link + new track with artists</strong></div>
+        </div>
+    </article>
+</section>
+
+<section class="split-grid">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Write Demo A: Add a Sampling Relation</h3>
+            <p>Useful for demonstrating that the relational model accepts new lineage edges with validation.</p>
+        </div>
+        <form id="sampling-form" class="form-grid">
+            <label>
+                <span>Relation ID (optional)</span>
+                <input name="sampling_relation_id" type="text" placeholder="Auto-generate if blank">
+            </label>
+            <label>
+                <span>Sampling track ID</span>
+                <input name="sampling_track_id" list="track-options" type="text" placeholder="TRK003" required>
+            </label>
+            <label>
+                <span>Sampled track ID</span>
+                <input name="sampled_track_id" list="track-options" type="text" placeholder="TRK002" required>
+            </label>
+            <label>
+                <span>Relation type</span>
+                <select name="relation_type">
+                    <option value="direct_sample">direct_sample</option>
+                    <option value="interpolation">interpolation</option>
+                    <option value="melodic_reference">melodic_reference</option>
+                    <option value="manual_relation">manual_relation</option>
+                </select>
+            </label>
+            <label>
+                <span>Verification level</span>
+                <select name="verification_level">
+                    <option value="manual_entry">manual_entry</option>
+                    <option value="secondary_reference">secondary_reference</option>
+                    <option value="manual_curation">manual_curation</option>
+                </select>
+            </label>
+            <label class="full-width">
+                <span>Note</span>
+                <textarea name="note" rows="3" placeholder="Explain why this relation matters for the demo."></textarea>
+            </label>
+            <div class="form-actions">
+                <button class="button" type="submit">Create sampling relation</button>
+            </div>
+        </form>
+        <div id="sampling-result" class="result-box muted">No write submitted yet.</div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Write Demo B: Add a Track with Artist Links</h3>
+            <p>Useful for showing that one transaction can add a track, optional feature values, and artist participation rows together.</p>
+        </div>
+        <form id="track-form" class="form-grid">
+            <label>
+                <span>Track ID (optional)</span>
+                <input name="track_id" type="text" placeholder="Auto-generate if blank">
+            </label>
+            <label>
+                <span>Track name</span>
+                <input name="track_name" type="text" placeholder="New demo track" required>
+            </label>
+            <label>
+                <span>Album ID (optional)</span>
+                <input name="album_id" list="album-options" type="text" placeholder="ALB003">
+            </label>
+            <label>
+                <span>Release date</span>
+                <input name="release_date" type="date">
+            </label>
+            <label>
+                <span>Duration (ms)</span>
+                <input name="duration_ms" type="number" min="1" placeholder="210000">
+            </label>
+            <label>
+                <span>Popularity</span>
+                <input name="popularity" type="number" min="0" max="100" placeholder="60">
+            </label>
+            <label>
+                <span>External source</span>
+                <input name="external_source" type="text" placeholder="spotify">
+            </label>
+            <label>
+                <span>External track ref</span>
+                <input name="external_track_ref" type="text" placeholder="optional external id">
+            </label>
+
+            <div class="full-width">
+                <div class="subsection-header">
+                    <h4>Artist participation rows</h4>
+                    <button class="button secondary" id="add-artist-row" type="button">Add artist row</button>
+                </div>
+                <div id="artist-rows" class="artist-row-stack"></div>
+            </div>
+
+            <div class="full-width">
+                <div class="subsection-header">
+                    <h4>Optional audio features</h4>
+                    <span class="muted">Leave blank if you only want a relational demo insert.</span>
+                </div>
+                <div class="mini-grid">
+                    <label><span>Tempo</span><input name="tempo" type="number" step="0.01" min="0"></label>
+                    <label><span>Energy</span><input name="energy" type="number" step="0.01" min="0" max="1"></label>
+                    <label><span>Valence</span><input name="valence" type="number" step="0.01" min="0" max="1"></label>
+                    <label><span>Danceability</span><input name="danceability" type="number" step="0.01" min="0" max="1"></label>
+                    <label><span>Acousticness</span><input name="acousticness" type="number" step="0.01" min="0" max="1"></label>
+                    <label><span>Speechiness</span><input name="speechiness" type="number" step="0.01" min="0" max="1"></label>
+                    <label><span>Liveness</span><input name="liveness" type="number" step="0.01" min="0" max="1"></label>
+                    <label><span>Loudness</span><input name="loudness" type="number" step="0.01"></label>
+                    <label><span>Instrumentalness</span><input name="instrumentalness" type="number" step="0.01" min="0" max="1"></label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="button" type="submit">Create track and artist links</button>
+            </div>
+        </form>
+        <div id="track-result" class="result-box muted">No write submitted yet.</div>
+    </article>
+</section>
+
+{% for demo in demos %}
+    <section class="panel spaced">
+        <div class="panel-header">
+            <p class="eyebrow">{{ demo.category }}</p>
+            <h3>{{ demo.title }}</h3>
+            <p>{{ demo.description }}</p>
+        </div>
+
+        <pre class="sql-block"><code>{{ demo.sql }}</code></pre>
+
+        {% if demo.rows %}
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            {% for key in demo.rows[0].keys() %}
+                                <th>{{ key }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in demo.rows %}
+                            <tr>
+                                {% for value in row.values() %}
+                                    <td>{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="muted">No rows returned.</p>
+        {% endif %}
+    </section>
+{% endfor %}
+
+<datalist id="track-options"></datalist>
+<datalist id="artist-options"></datalist>
+<datalist id="album-options"></datalist>
+
+<script>
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function setResult(targetId, message, ok = true) {
+    const target = document.getElementById(targetId);
+    target.className = `result-box ${ok ? 'success' : 'error'}`;
+    target.textContent = message;
+}
+
+function toNullableNumber(value) {
+    if (value === '' || value === null || value === undefined) {
+        return null;
+    }
+    return Number(value);
+}
+
+function addArtistRow(initial = {}) {
+    const container = document.getElementById('artist-rows');
+    const row = document.createElement('div');
+    row.className = 'artist-row';
+    row.innerHTML = `
+        <label>
+            <span>Artist ID</span>
+            <input class="artist-id" list="artist-options" type="text" placeholder="ART003" value="${escapeHtml(initial.artist_id || '')}" required>
+        </label>
+        <label>
+            <span>Role</span>
+            <select class="artist-role">
+                <option value="primary" ${initial.artist_role === 'primary' ? 'selected' : ''}>primary</option>
+                <option value="featured" ${initial.artist_role === 'featured' ? 'selected' : ''}>featured</option>
+                <option value="producer" ${initial.artist_role === 'producer' ? 'selected' : ''}>producer</option>
+            </select>
+        </label>
+        <label>
+            <span>Credit order</span>
+            <input class="credit-order" type="number" min="1" value="${escapeHtml(initial.credit_order || '')}">
+        </label>
+        <button class="button secondary remove-artist-row" type="button">Remove</button>
+    `;
+    row.querySelector('.remove-artist-row').addEventListener('click', () => row.remove());
+    container.appendChild(row);
+}
+
+async function loadReferenceData() {
+    const response = await fetch('/api/reference-data');
+    const data = await response.json();
+
+    document.getElementById('track-options').innerHTML = data.tracks.map(
+        (item) => `<option value="${item.track_id}">${escapeHtml(item.track_name)}</option>`
+    ).join('');
+    document.getElementById('artist-options').innerHTML = data.artists.map(
+        (item) => `<option value="${item.artist_id}">${escapeHtml(item.artist_name)}</option>`
+    ).join('');
+    document.getElementById('album-options').innerHTML = data.albums.map(
+        (item) => `<option value="${item.album_id}">${escapeHtml(item.album_name)}</option>`
+    ).join('');
+
+    document.getElementById('management-highlights').innerHTML = data.management_highlights.map(
+        (item) => `<div class="note-card">
+            <h4>${escapeHtml(item.title)}</h4>
+            <p>${escapeHtml(item.rationale)}</p>
+            <div class="note-inline"><span>Implemented as</span><strong>${escapeHtml(item.implementation)}</strong></div>
+        </div>`
+    ).join('');
+}
+
+document.getElementById('sampling-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const payload = Object.fromEntries(new FormData(form).entries());
+
+    try {
+        const response = await fetch('/api/sampling-relations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || data.error || 'Failed to create sampling relation.');
+        }
+        setResult(
+            'sampling-result',
+            `Created sampling relation ${data.item.sampling_relation_id}: ${data.item.sampling_track_id} -> ${data.item.sampled_track_id}`
+        );
+        form.reset();
+    } catch (error) {
+        setResult('sampling-result', error.message, false);
+    }
+});
+
+document.getElementById('track-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const artists = Array.from(document.querySelectorAll('.artist-row')).map((row, index) => ({
+        artist_id: row.querySelector('.artist-id').value.trim(),
+        artist_role: row.querySelector('.artist-role').value,
+        credit_order: toNullableNumber(row.querySelector('.credit-order').value) || (index + 1),
+    })).filter((row) => row.artist_id);
+
+    const payload = {
+        track_id: formData.get('track_id') || null,
+        track_name: formData.get('track_name'),
+        album_id: formData.get('album_id') || null,
+        release_date: formData.get('release_date') || null,
+        duration_ms: toNullableNumber(formData.get('duration_ms')),
+        popularity: toNullableNumber(formData.get('popularity')),
+        external_source: formData.get('external_source') || null,
+        external_track_ref: formData.get('external_track_ref') || null,
+        artists,
+        features: {
+            tempo: toNullableNumber(formData.get('tempo')),
+            energy: toNullableNumber(formData.get('energy')),
+            valence: toNullableNumber(formData.get('valence')),
+            danceability: toNullableNumber(formData.get('danceability')),
+            acousticness: toNullableNumber(formData.get('acousticness')),
+            speechiness: toNullableNumber(formData.get('speechiness')),
+            liveness: toNullableNumber(formData.get('liveness')),
+            loudness: toNullableNumber(formData.get('loudness')),
+            instrumentalness: toNullableNumber(formData.get('instrumentalness')),
+        },
+    };
+
+    try {
+        const response = await fetch('/api/tracks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.detail || data.error || 'Failed to create track.');
+        }
+        setResult(
+            'track-result',
+            `Created track ${data.track_id}. Artist links: ${data.artist_links_created}. Features inserted: ${data.features_created}.`
+        );
+        form.reset();
+        document.getElementById('artist-rows').innerHTML = '';
+        addArtistRow({ artist_role: 'primary', credit_order: 1 });
+    } catch (error) {
+        setResult('track-result', error.message, false);
+    }
+});
+
+document.getElementById('add-artist-row').addEventListener('click', () => addArtistRow({ artist_role: 'featured' }));
+
+addArtistRow({ artist_role: 'primary', credit_order: 1 });
+loadReferenceData().catch((error) => {
+    document.getElementById('management-highlights').textContent = error.message;
+});
+</script>
+{% endblock %}

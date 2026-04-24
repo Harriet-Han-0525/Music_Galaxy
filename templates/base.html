@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} | Music Galaxy</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+</head>
+<body class="{{ body_class | default('') }}">
+    <div class="shell">
+        <aside class="sidebar">
+            <div>
+                <p class="eyebrow">Database PoC</p>
+                <h1>Music Galaxy</h1>
+                <p class="sidebar-copy">
+                    A lightweight web interface for browsing curated tracks, artist networks,
+                    SQL evidence, and 3D relationship visualization from PostgreSQL.
+                </p>
+            </div>
+
+            <nav class="nav">
+                <a class="{% if active_page == 'overview' %}active{% endif %}" href="/">Overview</a>
+                <a class="{% if active_page == 'tracks' %}active{% endif %}" href="/tracks">Tracks</a>
+                <a class="{% if active_page == 'artists' %}active{% endif %}" href="/artists">Artists</a>
+                <a class="{% if active_page == 'sql-demo' %}active{% endif %}" href="/sql-demo">SQL Demo</a>
+                <a class="{% if active_page == 'galaxy' %}active{% endif %}" href="/galaxy">Music Galaxy</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>Data source: curated CSV dataset imported into PostgreSQL.</p>
+            </div>
+        </aside>
+
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

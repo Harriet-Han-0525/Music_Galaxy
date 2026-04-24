@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <p class="eyebrow">Overview</p>
+    <h2>Relational music structures, made visible.</h2>
+    <p class="lead">
+        This site presents the curated music dataset required by the project plan:
+        songs, artists, albums, sampling chains, cover relationships, collaboration
+        networks, audio features, SQL validation, and a 3D galaxy view.
+    </p>
+</section>
+
+<section class="card-grid" id="overview-counts">
+    <article class="stat-card">
+        <span class="muted">Tracks</span>
+        <strong id="count-tracks">...</strong>
+    </article>
+    <article class="stat-card">
+        <span class="muted">Artists</span>
+        <strong id="count-artists">...</strong>
+    </article>
+    <article class="stat-card">
+        <span class="muted">Albums</span>
+        <strong id="count-albums">...</strong>
+    </article>
+    <article class="stat-card">
+        <span class="muted">Sampling Links</span>
+        <strong id="count-samples">...</strong>
+    </article>
+    <article class="stat-card">
+        <span class="muted">Cover Links</span>
+        <strong id="count-covers">...</strong>
+    </article>
+</section>
+
+<section class="split-grid">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Top Covered Originals</h3>
+            <p>Evidence for one-to-many derivative recording relationships.</p>
+        </div>
+        <div id="top-covered" class="list-stack loading">Loading...</div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Top Sampled Sources</h3>
+            <p>Tracks that appear repeatedly in sampling lineages.</p>
+        </div>
+        <div id="top-sampled" class="list-stack loading">Loading...</div>
+    </article>
+</section>
+
+<section class="split-grid">
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Busiest Artists</h3>
+            <p>Artists with the broadest participation across the curated catalog.</p>
+        </div>
+        <div id="busiest-artists" class="list-stack loading">Loading...</div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-header">
+            <h3>Feature Snapshot</h3>
+            <p>Average audio feature values used in the 3D coordinate mapping.</p>
+        </div>
+        <div id="feature-summary" class="list-stack loading">Loading...</div>
+    </article>
+</section>
+
+<script>
+async function loadOverview() {
+    const response = await fetch('/api/overview');
+    const data = await response.json();
+
+    document.getElementById('count-tracks').textContent = data.counts.tracks;
+    document.getElementById('count-artists').textContent = data.counts.artists;
+    document.getElementById('count-albums').textContent = data.counts.albums;
+    document.getElementById('count-samples').textContent = data.counts.samples;
+    document.getElementById('count-covers').textContent = data.counts.covers;
+
+    document.getElementById('top-covered').innerHTML = data.top_covered.map(
+        item => `<a class="list-item" href="/tracks/${item.track_id}">
+            <span>${item.track_name}</span>
+            <strong>${item.cover_count} covers</strong>
+        </a>`
+    ).join('');
+
+    document.getElementById('top-sampled').innerHTML = data.top_sampled.map(
+        item => `<a class="list-item" href="/tracks/${item.track_id}">
+            <span>${item.track_name}</span>
+            <strong>${item.sampled_count} reuses</strong>
+        </a>`
+    ).join('');
+
+    document.getElementById('busiest-artists').innerHTML = data.busiest_artists.map(
+        item => `<a class="list-item" href="/artists/${item.artist_id}">
+            <span>${item.artist_name}</span>
+            <strong>${item.track_count} tracks</strong>
+        </a>`
+    ).join('');
+
+    document.getElementById('feature-summary').innerHTML = `
+        <div class="metric-row"><span>Average tempo</span><strong>${data.feature_summary.avg_tempo}</strong></div>
+        <div class="metric-row"><span>Average energy</span><strong>${data.feature_summary.avg_energy}</strong></div>
+        <div class="metric-row"><span>Average valence</span><strong>${data.feature_summary.avg_valence}</strong></div>
+    `;
+}
+
+loadOverview().catch((error) => {
+    document.getElementById('top-covered').textContent = error.message;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,10 @@
+name: music-galaxy
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.11
+  - fastapi
+  - uvicorn
+  - jinja2
+  - python-dotenv
+  - psycopg

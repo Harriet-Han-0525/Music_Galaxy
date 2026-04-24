@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero compact">
+    <p class="eyebrow">Artists</p>
+    <h2>Explore collaboration-ready artist entities.</h2>
+    <p class="lead">Search artists, inspect their track participation, and follow collaboration links through shared recordings.</p>
+</section>
+
+<section class="panel">
+    <div class="toolbar">
+        <input id="artist-search" type="search" placeholder="Search artist name">
+        <button id="artist-search-button" class="button">Search</button>
+    </div>
+    <div id="artists-table" class="loading">Loading...</div>
+</section>
+
+<script>
+async function loadArtists() {
+    const query = document.getElementById('artist-search').value.trim();
+    const response = await fetch(`/api/artists?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    const rows = data.items.map((item) => `
+        <tr>
+            <td><a href="/artists/${item.artist_id}">${item.artist_name}</a></td>
+            <td>${item.track_count}</td>
+            <td>${item.featured_count}</td>
+        </tr>
+    `).join('');
+
+    document.getElementById('artists-table').innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Artist</th>
+                    <th>Track count</th>
+                    <th>Featured appearances</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+}
+
+document.getElementById('artist-search-button').addEventListener('click', loadArtists);
+document.getElementById('artist-search').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        loadArtists();
+    }
+});
+
+loadArtists();
+</script>
+{% endblock %}

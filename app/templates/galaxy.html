@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="galaxy-chart" class="fullscreen-canvas"></div>
+
+<main class="spatial-ui-layer">
+    <div class="glass-panel command-center">
+        <p class="eyebrow">Music Galaxy Explorer</p>
+        <h2>Ask the musical universe.</h2>
+        <p class="muted-text">
+            Toggle relationship layers, trace sampling lineage, and inspect cover families in a spatial interface.
+        </p>
+
+        <div class="trace-toolbar">
+            <label class="field-inline">
+                <span>Focus track</span>
+                <select id="focus-track-select">
+                    <option value="">Choose a track...</option>
+                </select>
+            </label>
+
+            <div class="trace-actions">
+                <button id="load-full-graph" class="button" type="button">Full Galaxy</button>
+                <button id="trace-lineage-btn" class="button secondary" type="button">Trace Lineage</button>
+                <button id="cover-family-btn" class="button secondary" type="button">Cover Family</button>
+            </div>
+        </div>
+
+        <div class="toggle-group">
+            <label class="glass-toggle">
+                <input type="checkbox" id="show-sampling" checked>
+                <span>Sampling</span>
+            </label>
+            <label class="glass-toggle">
+                <input type="checkbox" id="show-cover" checked>
+                <span>Cover</span>
+            </label>
+            <label class="glass-toggle">
+                <input type="checkbox" id="show-collaboration" checked>
+                <span>Collaboration</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="galaxy-view-stage" aria-hidden="true">
+        <div class="galaxy-view-hint">3D relationship field</div>
+        <div class="galaxy-view-spacer"></div>
+    </div>
+
+    <div class="bottom-hud">
+        <div>
+            <div class="mode-chip-row">
+                <span id="mode-chip" class="mode-chip">Mode: Full Galaxy</span>
+            </div>
+            <div id="graph-stats" class="bento-grid loading">Loading database universe...</div>
+        </div>
+
+        <div class="hud-column">
+            <div id="trace-summary" class="glass-panel detail-card muted">
+                Trace summary appears here after loading a sampling lineage.
+            </div>
+            <div id="cover-summary" class="glass-panel detail-card muted">
+                Cover-family summary appears here after loading a version family.
+            </div>
+            <div id="node-info" class="glass-panel detail-card">
+                Hover or click a star to inspect its database entity.
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://unpkg.com/3d-force-graph"></script>
+<script>
+let rawGraphData = null;
+let Graph = null;
+let currentMode = 'full';
+let selectedTrackId = null;
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function formatNumber(value, digits = 2) {
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/A';
+    return Number(value).toFixed(digits);
+}
+
+function getFilters() {
+    return {
+        sampling: document.getElementById('show-sampling').checked,
+        cover: document.getElementById('show-cover').checked,
+        collaboration: document.getElementById('show-collaboration').checked,
+    };
+}
+
+function updateModeButtons() {
+    const fullBtn = document.getElementById('load-full-graph');
+    const traceBtn = document.getElementById('trace-lineage-btn');
+    const coverBtn = document.getElementById('cover-family-btn');
+
+    fullBtn.className = currentMode === 'full' ? 'button' : 'button secondary';
+    traceBtn.className = currentMode === 'sampling-trace' ? 'button' : 'button secondary';
+    coverBtn.className = currentMode === 'cover-family' ? 'button' : 'button secondary';
+}
+
+function updateModeChip() {
+    const chip = document.getElementById('mode-chip');
+    if (currentMode === 'sampling-trace') {
+        chip.textContent = 'Mode: Sampling Trace';
+        chip.className = 'mode-chip active';
+    } else if (currentMode === 'cover-family') {
+        chip.textContent = 'Mode: Cover Family';
+        chip.className = 'mode-chip active';
+    } else {
+        chip.textContent = 'Mode: Full Galaxy';
+        chip.className = 'mode-chip';
+    }
+    updateModeButtons();
+}
+
+function syncSelectedTrack(trackId) {
+    selectedTrackId = trackId || null;
+    const select = document.getElementById('focus-track-select');
+    if (select && select.value !== (selectedTrackId || '')) {
+        select.value = selectedTrackId || '';
+    }
+}
+
+function populateTrackSelect(tracks) {
+    const select = document.getElementById('focus-track-select');
+    select.innerHTML = '<option value="">Choose a track...</option>';
+    tracks.forEach((track) => {
+        const option = document.createElement('option');
+        option.value = track.track_id;
+        option.textContent = `${track.track_name} (${track.track_id})`;
+        select.appendChild(option);
+    });
+}
+
+function getNodeColor(node) {
+    const role = node.meta?.relation_role;
+    if (currentMode === 'sampling-trace') {
+        if (role === 'focus') return '#ffffff';
+        if (role === 'ancestor') return '#00f5d4';
+        if (role === 'descendant') return '#ffd166';
+    }
+    if (currentMode === 'cover-family') {
+        if (role === 'original') return '#ffffff';
+        if (selectedTrackId && node.id === selectedTrackId && node.id !== rawGraphData?.root_track?.track_id) return '#ff4fa3';
+    }
+    return node.color || '#7fd6ff';
+}
+
+function getNodeSize(node) {
+    let base = Math.max(2.0, Number(node.size || 6) * 0.38);
+    const role = node.meta?.relation_role;
+    if (role === 'focus' || role === 'original') base *= 1.45;
+    if (role === 'ancestor' || role === 'descendant') base *= 1.15;
+    if (selectedTrackId && node.id === selectedTrackId) base *= 1.12;
+    return base;
+}
+
+function buildGraphData() {
+    if (!rawGraphData) return { nodes: [], links: [] };
+    const filters = getFilters();
+
+    let links = rawGraphData.edges || [];
+    if (currentMode === 'full') {
+        links = links.filter((edge) => {
+            if (edge.type === 'sampling') return filters.sampling;
+            if (edge.type === 'cover') return filters.cover;
+            if (edge.type === 'collaboration') return filters.collaboration;
+            return false;
+        });
+    } else if (currentMode === 'sampling-trace') {
+        links = links.filter((edge) => edge.type === 'sampling');
+    } else if (currentMode === 'cover-family') {
+        links = links.filter((edge) => edge.type === 'cover');
+    }
+
+    const linkedIds = new Set();
+    links.forEach((edge) => {
+        linkedIds.add(edge.source);
+        linkedIds.add(edge.target);
+    });
+
+    const nodes = (rawGraphData.nodes || [])
+        .filter((node) => {
+            if (currentMode !== 'full') return node.type === 'track';
+            return linkedIds.has(node.id);
+        })
+        .map((node) => ({
+            ...node,
+            name: node.label || node.name || node.id,
+            color: getNodeColor(node),
+            fx: Number(node.x ?? 0) * 1.4,
+            fy: Number(node.y ?? 0) * 1.4,
+            fz: Number(node.z ?? 0) * 1.15,
+        }));
+
+    return { nodes, links: links.map((edge) => ({ ...edge })) };
+}
+
+function renderGraphStats() {
+    const stats = rawGraphData?.stats || {};
+    document.getElementById('graph-stats').innerHTML = `
+        <div class="bento-card"><span class="muted">Tracks</span><strong>${stats.track_nodes ?? 0}</strong></div>
+        <div class="bento-card"><span class="muted">Artists</span><strong>${stats.artist_nodes ?? 0}</strong></div>
+        <div class="bento-card"><span class="muted">Sampling</span><strong>${stats.sampling_edges ?? 0}</strong></div>
+        <div class="bento-card"><span class="muted">Covers</span><strong>${stats.cover_edges ?? 0}</strong></div>
+        <div class="bento-card"><span class="muted">Collaborations</span><strong>${stats.collaboration_edges ?? 0}</strong></div>
+    `;
+}
+
+function renderModeSummaries() {
+    const traceTarget = document.getElementById('trace-summary');
+    const coverTarget = document.getElementById('cover-summary');
+
+    if (currentMode === 'sampling-trace' && rawGraphData?.focus_track) {
+        const summary = rawGraphData.summary || {};
+        const ancestors = (rawGraphData.ancestors || []).map((row) => `${row.track_name} (d${row.depth})`).join(' | ');
+        const descendants = (rawGraphData.descendants || []).map((row) => `${row.track_name} (d${row.depth})`).join(' | ');
+        traceTarget.className = 'glass-panel detail-card';
+        traceTarget.innerHTML = `
+            <h4>Sampling Trace</h4>
+            <p><strong>${escapeHtml(rawGraphData.focus_track.track_name)}</strong></p>
+            <p>Direct sampled sources: ${summary.samples_from_count ?? 0}</p>
+            <p>Total ancestors: ${summary.ancestor_count ?? 0}</p>
+            <p>Total descendants: ${summary.descendant_count ?? 0}</p>
+            <p>${escapeHtml(ancestors || 'No ancestor chain in current dataset')}</p>
+            <p>${escapeHtml(descendants || 'No descendant chain in current dataset')}</p>
+        `;
+    } else {
+        traceTarget.className = 'glass-panel detail-card muted';
+        traceTarget.textContent = 'Trace summary appears here after loading a sampling lineage.';
+    }
+
+    if (currentMode === 'cover-family' && rawGraphData?.root_track) {
+        const timeline = (rawGraphData.timeline || []).map((row) => `${row.decade}: ${row.cover_count}`).join(' | ');
+        const tree = (rawGraphData.family_tree || []).map((row) => `${row.parent_track_name} → ${row.track_name}`).join(' | ');
+        const closest = rawGraphData.closest_cover ? `${rawGraphData.closest_cover.track_name} (${rawGraphData.closest_cover.feature_distance})` : 'N/A';
+        const furthest = rawGraphData.furthest_cover ? `${rawGraphData.furthest_cover.track_name} (${rawGraphData.furthest_cover.feature_distance})` : 'N/A';
+        coverTarget.className = 'glass-panel detail-card';
+        coverTarget.innerHTML = `
+            <h4>Cover Family</h4>
+            <p>Original: <strong>${escapeHtml(rawGraphData.root_track.track_name)}</strong></p>
+            <p>${escapeHtml(timeline || 'No dated cover timeline')}</p>
+            <p>${escapeHtml(tree || 'No family tree branches')}</p>
+            <p>Closest: ${escapeHtml(closest)}</p>
+            <p>Farthest: ${escapeHtml(furthest)}</p>
+        `;
+    } else {
+        coverTarget.className = 'glass-panel detail-card muted';
+        coverTarget.textContent = 'Cover-family summary appears here after loading a version family.';
+    }
+}
+
+function renderNodeInfo(node) {
+    const meta = node.meta || {};
+    document.getElementById('node-info').innerHTML = `
+        <h4 style="color:${node.color || '#fff'}">${escapeHtml(node.name || node.id)}</h4>
+        <p>Type: ${escapeHtml(node.type)}</p>
+        <p>Valence: ${formatNumber(meta.valence)} | Energy: ${formatNumber(meta.energy)} | Tempo: ${formatNumber(meta.tempo)}</p>
+        <p>Popularity: ${formatNumber(meta.popularity, 0)}</p>
+    `;
+}
+
+function renderGraph() {
+    if (!Graph) {
+        Graph = ForceGraph3D()(document.getElementById('galaxy-chart'));
+    }
+
+    const graphData = buildGraphData();
+    Graph
+        .graphData(graphData)
+        .backgroundColor('#000000')
+        .showNavInfo(false)
+        .nodeLabel((node) => node.name)
+        .nodeColor((node) => node.color)
+        .nodeVal((node) => getNodeSize(node))
+        .linkColor((link) => link.color || '#888')
+        .linkWidth((link) => {
+            if (currentMode === 'sampling-trace') return link.type === 'sampling' ? 1.1 : 0.25;
+            if (currentMode === 'cover-family') return link.type === 'cover' ? 1.0 : 0.25;
+            return link.type === 'collaboration' ? 0.35 : 0.75;
+        })
+        .linkOpacity((link) => {
+            if (currentMode === 'sampling-trace') return link.type === 'sampling' ? 0.27 : 0.06;
+            if (currentMode === 'cover-family') return link.type === 'cover' ? 0.22 : 0.06;
+            return link.type === 'collaboration' ? 0.08 : 0.16;
+        })
+        .linkDirectionalParticles((link) => (link.type === 'collaboration' ? 0 : 2))
+        .linkDirectionalParticleSpeed((link) => (link.type === 'sampling' ? 0.005 : 0.003))
+        .cooldownTicks(0)
+        .onNodeClick((node) => {
+            syncSelectedTrack(node.id);
+            renderNodeInfo(node);
+        });
+
+    const controls = Graph.controls();
+    if (controls) {
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.16;
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.09;
+    }
+}
+
+async function loadReferenceData() {
+    const response = await fetch('/api/reference-data');
+    if (!response.ok) throw new Error('Failed to load reference tracks.');
+    const data = await response.json();
+    populateTrackSelect(data.tracks || []);
+}
+
+async function loadFullGraph() {
+    currentMode = 'full';
+    updateModeChip();
+    const response = await fetch('/api/graph');
+    if (!response.ok) throw new Error('Failed to load full galaxy data.');
+    rawGraphData = await response.json();
+    renderGraphStats();
+    renderModeSummaries();
+    renderGraph();
+    document.getElementById('node-info').textContent = 'Full galaxy loaded. Click any node to inspect it.';
+}
+
+async function loadSamplingTrace(trackId) {
+    currentMode = 'sampling-trace';
+    updateModeChip();
+    const response = await fetch(`/api/tracks/${encodeURIComponent(trackId)}/sampling-trace`);
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to load sampling trace.');
+    }
+    rawGraphData = await response.json();
+    renderGraphStats();
+    renderModeSummaries();
+    renderGraph();
+}
+
+async function loadCoverFamily(trackId) {
+    currentMode = 'cover-family';
+    updateModeChip();
+    const response = await fetch(`/api/tracks/${encodeURIComponent(trackId)}/cover-family`);
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to load cover family.');
+    }
+    rawGraphData = await response.json();
+    renderGraphStats();
+    renderModeSummaries();
+    renderGraph();
+}
+
+document.getElementById('focus-track-select').addEventListener('change', (event) => {
+    syncSelectedTrack(event.target.value);
+});
+
+document.getElementById('load-full-graph').addEventListener('click', async () => {
+    try {
+        await loadFullGraph();
+    } catch (error) {
+        document.getElementById('node-info').innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+    }
+});
+
+document.getElementById('trace-lineage-btn').addEventListener('click', async () => {
+    if (!selectedTrackId) {
+        document.getElementById('node-info').innerHTML = '<p>Please choose a focus track first.</p>';
+        return;
+    }
+    try {
+        await loadSamplingTrace(selectedTrackId);
+    } catch (error) {
+        document.getElementById('node-info').innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+    }
+});
+
+document.getElementById('cover-family-btn').addEventListener('click', async () => {
+    if (!selectedTrackId) {
+        document.getElementById('node-info').innerHTML = '<p>Please choose a focus track first.</p>';
+        return;
+    }
+    try {
+        await loadCoverFamily(selectedTrackId);
+    } catch (error) {
+        document.getElementById('node-info').innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+    }
+});
+
+for (const id of ['show-sampling', 'show-cover', 'show-collaboration']) {
+    document.getElementById(id).addEventListener('change', () => {
+        if (!rawGraphData) return;
+        renderGraph();
+    });
+}
+
+async function initGalaxyPage() {
+    try {
+        updateModeChip();
+        await loadReferenceData();
+        await loadFullGraph();
+    } catch (error) {
+        document.getElementById('node-info').innerHTML = `<p>${escapeHtml(error.message)}</p>`;
+    }
+}
+
+initGalaxyPage();
+</script>
+{% endblock %}

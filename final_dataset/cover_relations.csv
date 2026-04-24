@@ -1,0 +1,13 @@
+﻿cover_relation_id,cover_track_id,original_track_id,cover_type,verification_level,note
+COV001,TRK028,TRK026,straight_cover,secondary_reference,Famous Whitney Houston cover of Dolly Parton original.
+COV002,TRK027,TRK026,straight_cover,secondary_reference,Earlier major reinterpretation following the Dolly Parton original.
+COV003,TRK029,TRK026,straight_cover,manual_curation,Added to strengthen multi-version mother-song tree for the database project.
+COV004,TRK031,TRK030,reinterpretation,secondary_reference,Aretha Franklin version reframes the song significantly.
+COV005,TRK033,TRK032,straight_cover,secondary_reference,Cross-era cover example used for temporal comparison.
+COV006,TRK035,TRK034,reinterpretation,secondary_reference,Canonical later interpretation of Leonard Cohen original.
+COV007,TRK036,TRK034,reinterpretation,manual_curation,Soundtrack-associated reinterpretation to enlarge cover family.
+COV008,TRK037,TRK034,reinterpretation,manual_curation,A cappella reinterpretation to enlarge cover family.
+COV009,TRK038,TRK034,reinterpretation,manual_curation,Additional modern reinterpretation to create 4-cover mother-song tree.
+COV010,TRK040,TRK039,reinterpretation,secondary_reference,Johnny Cash version is usually discussed as a reinterpretive cover.
+COV011,TRK042,TRK041,reinterpretation,secondary_reference,Fugees version functions as a prominent reinterpretation.
+COV012,TRK044,TRK043,live_cover,secondary_reference,Live cover version used to demonstrate version-type differences.

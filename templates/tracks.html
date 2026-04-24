@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero compact">
+    <p class="eyebrow">Tracks</p>
+    <h2>Browse the curated song catalog.</h2>
+    <p class="lead">Search by track title or artist name, then open a detail page for relationships and features.</p>
+</section>
+
+<section class="panel">
+    <div class="toolbar">
+        <input id="track-search" type="search" placeholder="Search tracks or artists">
+        <button id="track-search-button" class="button">Search</button>
+    </div>
+    <div id="tracks-table" class="loading">Loading...</div>
+</section>
+
+<script>
+async function loadTracks() {
+    const query = document.getElementById('track-search').value.trim();
+    const response = await fetch(`/api/tracks?q=${encodeURIComponent(query)}`);
+    const data = await response.json();
+    const rows = data.items.map((item) => `
+        <tr>
+            <td><a href="/tracks/${item.track_id}">${item.track_name}</a></td>
+            <td>${item.artists || '-'}</td>
+            <td>${item.album_name || '-'}</td>
+            <td>${item.release_date || '-'}</td>
+            <td>${item.popularity ?? '-'}</td>
+        </tr>
+    `).join('');
+
+    document.getElementById('tracks-table').innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Track</th>
+                    <th>Artists</th>
+                    <th>Album</th>
+                    <th>Release date</th>
+                    <th>Popularity</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+}
+
+document.getElementById('track-search-button').addEventListener('click', loadTracks);
+document.getElementById('track-search').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        loadTracks();
+    }
+});
+
+loadTracks();
+</script>
+{% endblock %}
