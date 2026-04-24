@@ -1,6 +1,0 @@
-name: pg-check
-channels:
-  - conda-forge
-dependencies:
-  - python>=3.10
-  - psycopg2
